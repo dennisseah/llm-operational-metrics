@@ -9,6 +9,7 @@ from azure.ai.inference.models import (
     UserMessage,
 )
 from azure.core.credentials import AzureKeyCredential
+from azure.identity import DefaultAzureCredential
 from lagom.environment import Env
 
 from llm_operational_metrics.metric_generator.inference_chat_completion_metric_generator import (  # noqa E501
@@ -22,22 +23,30 @@ from llm_operational_metrics.protocols.i_azure_phi3_service import (
 
 class AzurePhi3Env(Env):
     azure_phi3_endpoint: str
-    azure_phi3_key: str
+    azure_phi3_key: str | None = None
 
 
 @dataclass
 class AzurePhi3Service(IAzurePhi3Service):
     env: AzurePhi3Env
 
+    def get_client(self):
+        if self.env.azure_phi3_key:
+            return ChatCompletionsClient(
+                endpoint=self.env.azure_phi3_endpoint,
+                credential=AzureKeyCredential(self.env.azure_phi3_key),
+            )
+
+        return ChatCompletionsClient(
+            endpoint=self.env.azure_phi3_endpoint,
+            credential=DefaultAzureCredential(),  # type: ignore
+        )
+
     async def generate(
         self, prompts: list[SystemMessage | AssistantMessage | UserMessage], **kwargs
     ) -> AzurePhi3ChatCompletion:
         start_time = time.time()
-        client = ChatCompletionsClient(
-            endpoint=self.env.azure_phi3_endpoint,
-            credential=AzureKeyCredential(self.env.azure_phi3_key),
-        )
-
+        client = self.get_client()
         try:
             result: ChatCompletions = await client.complete(messages=prompts, **kwargs)  # type: ignore
             end_time = time.time()
