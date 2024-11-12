@@ -14,7 +14,7 @@ async def main():
                 content="You are a mathemetician. What is the square root of a "
                 "negative number.",
             ),
-        ],
+        ]
     )
 
     print(json.dumps(result.model_dump(), indent=2))

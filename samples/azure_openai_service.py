@@ -14,7 +14,6 @@ async def main():
                 "negative number.",
             }
         ],
-        max_tokens=50,
     )
 
     print(json.dumps(result.model_dump(), indent=2))
